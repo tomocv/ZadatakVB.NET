@@ -2,6 +2,9 @@
 Partial Class Form1
     Inherits System.Windows.Forms.Form
 
+    Dim isTimerRunning As Boolean
+    Dim haltTime As Integer
+
     'Form overrides dispose to clean up the component list.
     <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
@@ -22,6 +25,7 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        components = New ComponentModel.Container()
         Label1 = New Label()
         Label2 = New Label()
         Label3 = New Label()
@@ -29,6 +33,7 @@ Partial Class Form1
         TextBox2 = New TextBox()
         TextBox3 = New TextBox()
         Button1 = New Button()
+        Timer1 = New Timer(components)
         SuspendLayout()
         ' 
         ' Label1
@@ -88,6 +93,10 @@ Partial Class Form1
         Button1.Text = "&Spremi"
         Button1.UseVisualStyleBackColor = True
         ' 
+        ' Timer1
+        ' 
+        Timer1.Interval = 1000
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
@@ -113,4 +122,5 @@ Partial Class Form1
     Friend WithEvents TextBox2 As TextBox
     Friend WithEvents TextBox3 As TextBox
     Friend WithEvents Button1 As Button
+    Friend WithEvents Timer1 As Timer
 End Class
