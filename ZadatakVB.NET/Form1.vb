@@ -2,6 +2,8 @@
 Imports System.Text.RegularExpressions
 Imports System.Text.Json
 Imports System.Net.Http
+Imports System.Net
+Imports System.Net.Mail
 
 Public Class Form1
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
@@ -111,6 +113,7 @@ Public Class Form1
 
                         command.ExecuteNonQuery()
                     End Using
+
                     MessageBox.Show("Dodani podaci: " + Environment.NewLine +
                                     "ime: " + ime + Environment.NewLine +
                                     "prezime: " + prezime + Environment.NewLine +
@@ -118,6 +121,8 @@ Public Class Form1
                                     "Adresa: " + item.address.street + ", " + item.address.suite + ", " + item.address.city + ", " + item.address.zipcode + Environment.NewLine +
                                     "Web stranica: " + item.website + Environment.NewLine +
                                     "Telefon: " + item.phone)
+
+                    SendEmail(ime, prezime, email, item)
                 End Using
             Next
         Else
@@ -131,14 +136,60 @@ Public Class Form1
 
                     connection.Open()
                     command.ExecuteNonQuery()
-                    MessageBox.Show("Dodani podaci: " + Environment.NewLine +
-                                    "ime: " + ime + Environment.NewLine +
-                                    "prezime: " + prezime + Environment.NewLine +
-                                    "E-mail: " + email)
                 End Using
+
+                MessageBox.Show("Dodani podaci: " + Environment.NewLine +
+                                "ime: " + ime + Environment.NewLine +
+                                "prezime: " + prezime + Environment.NewLine +
+                                "E-mail: " + email)
+
+                SendEmail(ime, prezime, email, Nothing)
             End Using
         End If
 
+    End Sub
+
+    Private Shared Sub SendEmail(ime As String, prezime As String, email As String, item As User)
+        Dim smtpServer As String = "smtp.example.com" 'Unijeti adresu SMTP servera
+        Dim smtpPort As Integer = 587 'Unijeti SMTP port
+        Dim smtpUsername As String = "vas@email.com" 'Unijeti SMTP username
+        Dim smtpPassword As String = "vaspassword" 'Unijeti SMTP password
+
+        Dim fromAddress As New MailAddress("posiljatelj@example.com", "Ime Pošiljatelja") 'Unijeti podatke pošaljitelja
+        Dim toAddress As New MailAddress("primatelj@example.com", "Ime Primatelja") 'Unijeti podatke primaoca
+
+        Dim subject As String = "Dodani podaci za korisnika " + ime + " " + prezime
+        Dim body As String
+
+        If item Is Nothing Then
+            body = "Dodani podaci: " + Environment.NewLine +
+                   "ime: " + ime + Environment.NewLine +
+                   "prezime: " + prezime + Environment.NewLine +
+                   "E-mail: " + email
+        Else
+            body = "Dodani podaci: " + Environment.NewLine +
+                   "ime: " + ime + Environment.NewLine +
+                   "prezime: " + prezime + Environment.NewLine +
+                   "E-mail: " + email + Environment.NewLine +
+                   "Adresa: " + item.address.street + ", " + item.address.suite + ", " + item.address.city + ", " + item.address.zipcode + Environment.NewLine +
+                   "Web stranica: " + item.website + Environment.NewLine +
+                   "Telefon: " + item.phone
+        End If
+
+        Dim smtpClient As New SmtpClient(smtpServer, smtpPort)
+        smtpClient.Credentials = New NetworkCredential(smtpUsername, smtpPassword)
+        smtpClient.EnableSsl = True
+
+        Dim mail As New MailMessage(fromAddress, toAddress)
+        mail.Subject = subject
+        mail.Body = body
+
+        Try
+            smtpClient.Send(mail)
+            MessageBox.Show("Email uspješno poslan.")
+        Catch ex As Exception
+            MessageBox.Show($"Greška: {ex.Message}")
+        End Try
     End Sub
 
     Private Shared Async Function FetchJsonAsync(url As String) As Task(Of String)
