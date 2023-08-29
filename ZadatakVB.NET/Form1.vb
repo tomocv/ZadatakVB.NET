@@ -188,6 +188,10 @@ Public Class Form1
                                 "ime: " + ime + Environment.NewLine +
                                 "prezime: " + prezime + Environment.NewLine +
                                 "E-mail: " + email)
+                Log.Information("Dodani podaci: " + Environment.NewLine +
+                                "ime: " + ime + Environment.NewLine +
+                                "prezime: " + prezime + Environment.NewLine +
+                                "E-mail: " + email)
 
                 SendEmail(ime, prezime, email, Nothing)
             End Using
