@@ -1,4 +1,6 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+﻿Imports Serilog
+
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class Form1
     Inherits System.Windows.Forms.Form
 
@@ -100,7 +102,7 @@ Partial Class Form1
         ' 
         ' Form1
         ' 
-        AutoScaleDimensions = New SizeF(8F, 20F)
+        AutoScaleDimensions = New SizeF(8.0F, 20.0F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(800, 450)
         Controls.Add(Button1)
@@ -124,4 +126,16 @@ Partial Class Form1
     Friend WithEvents TextBox3 As TextBox
     Friend WithEvents Button1 As Button
     Friend WithEvents Timer1 As Timer
+
+    Public Sub New()
+        Serilog.Log.Logger = New LoggerConfiguration() _
+            .WriteTo.Console() _
+            .WriteTo.File("log.txt") _
+            .CreateLogger()
+        ',, outputTemplate:="{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+        ' This call is required by the designer.
+        InitializeComponent()
+
+            ' Add any initialization after the InitializeComponent() call.
+    End Sub
 End Class

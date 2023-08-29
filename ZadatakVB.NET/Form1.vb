@@ -4,8 +4,10 @@ Imports System.Text.Json
 Imports System.Net.Http
 Imports System.Net
 Imports System.Net.Mail
+Imports Serilog
 
 Public Class Form1
+    Private Shared ReadOnly Log As ILogger = Serilog.Log.ForContext(Of Form1)()
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Dim ime, prezime, email As String
 
@@ -15,29 +17,46 @@ Public Class Form1
         email = TextBox3.Text
 
         If ime = "" Then
+            Log.Information("Ime nije uneseno")
             MessageBox.Show("Ime nije uneseno!")
             TextBox1.Focus()
             Exit Sub
         ElseIf prezime = "" Then
+            Log.Information("Prezime nije uneseno")
             MessageBox.Show("Prezime nije uneseno!")
             TextBox2.Focus()
             Exit Sub
         ElseIf Not IsValidEmail(email) Then
+            Log.Information("Nije unesen ispravan e-mail!")
             MessageBox.Show("Nije unesen ispravan e-mail!")
+
             TextBox3.Focus()
             Exit Sub
         End If
 
 
         If isTimerRunning Then
+            Log.Information("Upozorenje: Dozvoljen samo jedan upis u minuti! Molim pričekajte " +
+                            haltTime.ToString +
+                            " sekundi za novi upis!")
             MessageBox.Show("Dozvoljen samo jedan upis u minuti! Molim pričekajte " +
                             haltTime.ToString +
                             " sekundi za novi upis!", "Upozorenje", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         Else
-            'zapis u bazu SQL servera
-            InsertToDatabase(ime, prezime, email)
+            Try
+                'zapis u bazu SQL servera
+                InsertToDatabase(ime, prezime, email)
+
+                TextBox1.Clear()
+                TextBox2.Clear()
+                TextBox3.Clear()
+
+            Catch ex As Exception
+                Log.Error(ex, "Greška pri unosu u bazu")
+            End Try
 
             StartTimer()
+            Log.Information("Pokrenut timer")
         End If
     End Sub
 
@@ -73,6 +92,12 @@ Public Class Form1
 
                         connection.Open()
                         command.ExecuteNonQuery()
+                        Log.Information("INSERT INTO Address (street, suite, city, zipcode, lat, lng) VALUES (" + item.address.street + ", " +
+                                        item.address.suite + ", " +
+                                        item.address.city + ", " +
+                                        item.address.zipcode + ", " +
+                                        item.address.geo.lat + ", " +
+                                        item.address.geo.lng)
                     End Using
 
                     query = "INSERT INTO Company (name, catchPhrase, bs) VALUES (@Name, @CatchPhrase, @Bs)"
@@ -82,6 +107,9 @@ Public Class Form1
                         command.Parameters.AddWithValue("@Bs", item.company.bs)
 
                         command.ExecuteNonQuery()
+                        Log.Information("INSERT INTO Company (name, catchPhrase, bs) VALUES (" + item.company.name + ", " +
+                                        item.company.catchPhrase + ", " +
+                                        item.company.bs)
                     End Using
 
                     query = "SELECT addressID FROM Address WHERE street='" + item.address.street + "' AND suite='" + item.address.suite + "' AND city='" + item.address.city + "' AND zipcode='" + item.address.zipcode + "'"
@@ -89,6 +117,7 @@ Public Class Form1
                         Using reader As SqlDataReader = command.ExecuteReader()
                             reader.Read()
                             addressID = reader("addressID")
+                            Log.Information("Učitan addressID sa servera: " + addressID.ToString)
                         End Using
                     End Using
 
@@ -97,6 +126,7 @@ Public Class Form1
                         Using reader As SqlDataReader = command.ExecuteReader()
                             reader.Read()
                             companyID = reader("companyID")
+                            Log.Information("Učitan companyID sa servera: " + companyID.ToString)
                         End Using
                     End Using
 
@@ -112,9 +142,25 @@ Public Class Form1
                         command.Parameters.AddWithValue("@CompanyID", companyID)
 
                         command.ExecuteNonQuery()
+                        Log.Information("INSERT INTO Klijenti (ime, prezime, email, username, phone, website, addressID, companyID) Values (" +
+                                        ime + ", " +
+                                        prezime + ", " +
+                                        email + ", " +
+                                        item.username + ", " +
+                                        item.phone + ", " +
+                                        item.website + "," +
+                                        addressID.ToString + ", " +
+                                        companyID.ToString)
                     End Using
 
                     MessageBox.Show("Dodani podaci: " + Environment.NewLine +
+                                    "ime: " + ime + Environment.NewLine +
+                                    "prezime: " + prezime + Environment.NewLine +
+                                    "E-mail: " + email + Environment.NewLine +
+                                    "Adresa: " + item.address.street + ", " + item.address.suite + ", " + item.address.city + ", " + item.address.zipcode + Environment.NewLine +
+                                    "Web stranica: " + item.website + Environment.NewLine +
+                                    "Telefon: " + item.phone)
+                    Log.Information("Dodani podaci: " + Environment.NewLine +
                                     "ime: " + ime + Environment.NewLine +
                                     "prezime: " + prezime + Environment.NewLine +
                                     "E-mail: " + email + Environment.NewLine +
@@ -187,8 +233,10 @@ Public Class Form1
         Try
             smtpClient.Send(mail)
             MessageBox.Show("Email uspješno poslan.")
+            Log.Information("Email uspješno poslan.")
         Catch ex As Exception
-            MessageBox.Show($"Greška: {ex.Message}")
+            MessageBox.Show("Greška: " + ex.Message)
+            Log.Error("Greška pri slanju e-maila: " + ex.Message)
         End Try
     End Sub
 
@@ -198,11 +246,13 @@ Public Class Form1
                 Dim response As HttpResponseMessage = Await httpClient.GetAsync(url)
 
                 If response.IsSuccessStatusCode Then
+                    Log.Information("JSON podaci uspješno dohvaćeni")
                     Return Await response.Content.ReadAsStringAsync()
                 Else
                     Throw New Exception($"Neuspješno dohvaćanje podataka. Status code: {response.StatusCode}")
                 End If
             Catch ex As Exception
+                Log.Error(ex, "Greška pri dohvaćanju JSON podataka")
                 Throw New Exception($"Greška: {ex.Message}")
             End Try
         End Using
